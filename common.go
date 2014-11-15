@@ -44,8 +44,7 @@ func glob(pattern string, path ...string) (matches FileList) {
 	return matches
 }
 
-// Returns a list of all parent directories of the path. Recursion is fun.
-// So are variadic arguments! Takes a split path.
+// Returns a list of all parent directories of the path.
 func getAllParents(path string) DirList {
 	listing := [][]string{strings.Split(path, string(os.PathSeparator))}
 
@@ -56,7 +55,7 @@ func getAllParents(path string) DirList {
 
 	output := DirList{}
 	for _, item := range listing {
-		output = append(output, "/"+filepath.Join(item...))
+		output = append(output, filepath.Join(item...))
 	}
 
 	return output

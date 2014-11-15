@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,11 +11,61 @@ import (
 
 var basePath string
 
-func fixDir(add string) {
-	if len(basePath) == 0 {
-		basePath, _ = filepath.Abs("")
+// Copy file from https://www.socketloop.com/tutorials/golang-copy-directory-including-sub-directories-files
+func CopyFile(source string, dest string) (err error) {
+	sourcefile, err := os.Open(source)
+	if err != nil {
+		return err
 	}
-	os.Chdir(filepath.Join(basePath, "test/fixture/", add))
+
+	defer sourcefile.Close()
+
+	destfile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+
+	defer destfile.Close()
+
+	_, err = io.Copy(destfile, sourcefile)
+	if err == nil {
+		sourceinfo, err := os.Stat(source)
+		if err != nil {
+			err = os.Chmod(dest, sourceinfo.Mode())
+		}
+
+	}
+
+	return
+}
+
+func fixDir(add string) {
+	if basePath != "" {
+		os.Chdir(basePath)
+	}
+
+	target := "test_tmp"
+
+	os.RemoveAll(target)
+	err := filepath.Walk(filepath.Join(basePath, "test/fixture"), func(file string, info os.FileInfo, err error) error {
+		p := filepath.Join(target, file)
+		if err != nil {
+			w, _ := filepath.Abs("")
+			log.Panicf("%s", w)
+			log.Panicf("Error searching for %s: %s", target, err)
+		}
+		if info.IsDir() {
+			return os.MkdirAll(p, info.Mode())
+		} else {
+			return CopyFile(file, p)
+		}
+	})
+	if err != nil {
+		log.Panicf("%s", err)
+	}
+
+	basePath, _ := filepath.Abs("")
+	os.Chdir(filepath.Join(basePath, target, "test/fixture", add))
 	clearVcs()
 }
 
