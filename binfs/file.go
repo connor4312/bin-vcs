@@ -1,45 +1,33 @@
 package main
 
 import (
-    "io"
-    "crypto/sha256"
+	"log"
+	"os"
 )
 
 type File struct {
 	Name       string
 	Path       string
-	RevisionOf File
+	RevisionOf *File
 }
 
-func chunkIsDone ([]byte) bool {
-    for i := 0; i < CHUNK_SIZE; i++ {
-        if hashed[i] != 0 {
-            return false
-        }
-    }
+func (f *File) Chunk() {
+	data, err := os.Open(f.Path)
+	if err != nil {
+		log.Printf("Error opening %s: %s", f.Path, err)
+		return
+	}
 
-    return true
-}
+	ch := make(chan []byte)
+	go chunkData(data, ch)
 
-func chunkify (data io.Reader) [][]byte {
-    var output [][]byte
-    var building []byte
+	for {
+		chunk := <-ch
 
-    buf := make([]byte, 32)
-    for data.Read(data) > 0 {
-        hashed := sha256.Sum256(buf)
-        if chunkIsDone(hashed) {
-            output = append(output, building)
-            building = []byte{}
-        } else {
-            building = append(building, buf[0])
-            buf = buf[1:len(buf)]
-        }
-    }
-
-    return output
-}
-
-func (*f File) Create(data io.Reader) {
-
+		if len(chunk) == 0 {
+			return
+		} else {
+			print(chunk)
+		}
+	}
 }
